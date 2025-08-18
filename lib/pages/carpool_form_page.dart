@@ -1,4 +1,10 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:http/http.dart' as http;
+import '../models/sessionManager.dart';
+import '../models/user.dart';
 import '../utils/app_colors.dart';
 import '../widgets/custom_text_field.dart';
 import '../widgets/custom_button.dart';
@@ -23,20 +29,48 @@ class _CarpoolFormPageState extends State<CarpoolFormPage> {
   final _vehicleModelController = TextEditingController();
   final _vehicleYearController = TextEditingController();
   final _vehicleColorController = TextEditingController();
-  
+
   bool smokingAllowed = false;
   bool petsAllowed = true;
   bool _isLoading = false;
 
   final List<String> tunisianCities = [
-    'Tunis', 'Sfax', 'Sousse', 'Kairouan', 'Bizerte', 'Gabès', 'Ariana',
-    'Gafsa', 'Monastir', 'Ben Arous', 'Kasserine', 'Médenine', 'Nabeul',
-    'Tataouine', 'Beja', 'Jendouba', 'Mahdia', 'Siliana', 'Manouba',
-    'Kef', 'Tozeur', 'Sidi Bouzid', 'Zaghouan', 'Kebili'
+    'Tunis',
+    'Sfax',
+    'Sousse',
+    'Kairouan',
+    'Bizerte',
+    'Gabès',
+    'Ariana',
+    'Gafsa',
+    'Monastir',
+    'Ben Arous',
+    'Kasserine',
+    'Médenine',
+    'Nabeul',
+    'Tataouine',
+    'Beja',
+    'Jendouba',
+    'Mahdia',
+    'Siliana',
+    'Manouba',
+    'Kef',
+    'Tozeur',
+    'Sidi Bouzid',
+    'Zaghouan',
+    'Kebili'
   ];
 
   final List<String> vehicleColors = [
-    'Black', 'White', 'Silver', 'Gray', 'Blue', 'Red', 'Green', 'Brown', 'Other'
+    'Black',
+    'White',
+    'Silver',
+    'Gray',
+    'Blue',
+    'Red',
+    'Green',
+    'Brown',
+    'Other'
   ];
 
   @override
@@ -64,7 +98,7 @@ class _CarpoolFormPageState extends State<CarpoolFormPage> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(
+            colorScheme: const ColorScheme.light(
               primary: AppColors.primary,
               onPrimary: Colors.white,
               surface: Colors.white,
@@ -89,7 +123,7 @@ class _CarpoolFormPageState extends State<CarpoolFormPage> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(
+            colorScheme: const ColorScheme.light(
               primary: AppColors.primary,
               onPrimary: Colors.white,
               surface: Colors.white,
@@ -102,14 +136,16 @@ class _CarpoolFormPageState extends State<CarpoolFormPage> {
     );
     if (picked != null) {
       final now = DateTime.now();
-      final dateTime = DateTime(now.year, now.month, now.day, picked.hour, picked.minute);
+      final dateTime =
+          DateTime(now.year, now.month, now.day, picked.hour, picked.minute);
       setState(() {
         _departureTimeController.text = dateTime.toIso8601String();
       });
     }
   }
 
-  void _showLocationBottomSheet(TextEditingController controller, String title) {
+  void _showLocationBottomSheet(
+      TextEditingController controller, String title) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -147,7 +183,9 @@ class _CarpoolFormPageState extends State<CarpoolFormPage> {
                       width: double.infinity,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       decoration: BoxDecoration(
-                        color: controller.text == city ? AppColors.primary.withOpacity(0.1) : Colors.transparent,
+                        color: controller.text == city
+                            ? AppColors.primary.withOpacity(0.1)
+                            : Colors.transparent,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
@@ -155,7 +193,9 @@ class _CarpoolFormPageState extends State<CarpoolFormPage> {
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w600,
-                          color: controller.text == city ? AppColors.primary : AppColors.textDark,
+                          color: controller.text == city
+                              ? AppColors.primary
+                              : AppColors.textDark,
                         ),
                       ),
                     ),
@@ -207,7 +247,9 @@ class _CarpoolFormPageState extends State<CarpoolFormPage> {
                       width: double.infinity,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       decoration: BoxDecoration(
-                        color: _vehicleColorController.text == color ? AppColors.primary.withOpacity(0.1) : Colors.transparent,
+                        color: _vehicleColorController.text == color
+                            ? AppColors.primary.withOpacity(0.1)
+                            : Colors.transparent,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
@@ -215,7 +257,9 @@ class _CarpoolFormPageState extends State<CarpoolFormPage> {
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w600,
-                          color: _vehicleColorController.text == color ? AppColors.primary : AppColors.textDark,
+                          color: _vehicleColorController.text == color
+                              ? AppColors.primary
+                              : AppColors.textDark,
                         ),
                       ),
                     ),
@@ -235,23 +279,85 @@ class _CarpoolFormPageState extends State<CarpoolFormPage> {
         _isLoading = true;
       });
 
-      // Simulate API call
-      await Future.delayed(const Duration(seconds: 2));
+      try {
+        // 1️⃣ Get the current logged-in user from session
+        final User? user = SessionManager().getUser();
+        if (user == null) {
+          throw Exception('User not found. Please login again.');
+        }
 
-      setState(() {
-        _isLoading = false;
-      });
+        // 2️⃣ Prepare existing user data
+        Map<String, dynamic> userData = user.toJson();
 
-      // Show success message
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Carpool details saved successfully!'),
-            backgroundColor: AppColors.primary,
-            behavior: SnackBarBehavior.floating,
-          ),
+        // 3️⃣ Add or replace the carpoolDetails object with form values
+        userData['carpoolDetails'] = {
+          'fromLocation': _fromLocationController.text.trim(),
+          'toLocation': _toLocationController.text.trim(),
+          'departureDate': _departureDateController.text.trim(),
+          'departureTime': _departureTimeController.text.trim(),
+          'availableSeats': int.parse(_availableSeatsController.text.trim()),
+          'pricePerSeat': double.parse(_pricePerSeatController.text.trim()),
+          'smokingAllowed': smokingAllowed,
+          'petsAllowed': petsAllowed,
+          'additionalInfo': _additionalInfoController.text.trim(),
+          'vehicleMake': _vehicleMakeController.text.trim(),
+          'vehicleModel': _vehicleModelController.text.trim(),
+          'vehicleYear': int.parse(_vehicleYearController.text.trim()),
+          'vehicleColor': _vehicleColorController.text.trim(),
+        };
+
+        // 4️⃣ Set role explicitly to carpool driver (if needed)
+        userData['role'] = 'carpool_driver';
+
+        // 5️⃣ Make the PUT request to backend API
+        final response = await http.put(
+          Uri.parse('${dotenv.env['API_URL']!}/api/users/update'),
+          headers: {
+            'Content-Type': 'application/json; charset=utf-8',
+            'Accept': 'application/json',
+          },
+          body: jsonEncode(userData),
         );
-        Navigator.pop(context);
+
+        // 6️⃣ Handle response
+        if (response.statusCode == 200) {
+          final updatedUserData = jsonDecode(response.body);
+
+          // Update session with the new user data
+          SessionManager().setUser(User.fromJson(updatedUserData));
+
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Carpool details saved successfully!'),
+                backgroundColor: AppColors.primary,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+            Navigator.pop(context);
+          }
+        } else {
+          final errorData = jsonDecode(response.body);
+          throw Exception(
+              errorData['message'] ?? 'Failed to save carpool details');
+        }
+      } catch (e) {
+        // 7️⃣ Show error feedback
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error: ${e.toString()}'),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
       }
     }
   }
@@ -290,9 +396,9 @@ class _CarpoolFormPageState extends State<CarpoolFormPage> {
                       ),
                     ],
                   ),
-                  
+
                   const SizedBox(height: 40),
-                  
+
                   // Title
                   const Text(
                     'Carpool',
@@ -314,9 +420,9 @@ class _CarpoolFormPageState extends State<CarpoolFormPage> {
                       height: 1.1,
                     ),
                   ),
-                  
+
                   const SizedBox(height: 16),
-                  
+
                   const Text(
                     'Set up your carpool trip information',
                     style: TextStyle(
@@ -328,7 +434,7 @@ class _CarpoolFormPageState extends State<CarpoolFormPage> {
                 ],
               ),
             ),
-            
+
             // Form
             Expanded(
               child: SingleChildScrollView(
@@ -339,7 +445,8 @@ class _CarpoolFormPageState extends State<CarpoolFormPage> {
                     children: [
                       // From Location
                       GestureDetector(
-                        onTap: () => _showLocationBottomSheet(_fromLocationController, 'From Location'),
+                        onTap: () => _showLocationBottomSheet(
+                            _fromLocationController, 'From Location'),
                         child: AbsorbPointer(
                           child: CustomTextField(
                             hintText: 'From Location',
@@ -354,12 +461,13 @@ class _CarpoolFormPageState extends State<CarpoolFormPage> {
                           ),
                         ),
                       ),
-                      
+
                       const SizedBox(height: 24),
-                      
+
                       // To Location
                       GestureDetector(
-                        onTap: () => _showLocationBottomSheet(_toLocationController, 'To Location'),
+                        onTap: () => _showLocationBottomSheet(
+                            _toLocationController, 'To Location'),
                         child: AbsorbPointer(
                           child: CustomTextField(
                             hintText: 'To Location',
@@ -374,9 +482,9 @@ class _CarpoolFormPageState extends State<CarpoolFormPage> {
                           ),
                         ),
                       ),
-                      
+
                       const SizedBox(height: 24),
-                      
+
                       // Departure Date
                       CustomTextField(
                         hintText: 'Departure Date',
@@ -391,9 +499,9 @@ class _CarpoolFormPageState extends State<CarpoolFormPage> {
                           return null;
                         },
                       ),
-                      
+
                       const SizedBox(height: 24),
-                      
+
                       // Departure Time
                       CustomTextField(
                         hintText: 'Departure Time',
@@ -408,9 +516,9 @@ class _CarpoolFormPageState extends State<CarpoolFormPage> {
                           return null;
                         },
                       ),
-                      
+
                       const SizedBox(height: 24),
-                      
+
                       // Available Seats and Price Per Seat
                       Row(
                         children: [
@@ -453,9 +561,9 @@ class _CarpoolFormPageState extends State<CarpoolFormPage> {
                           ),
                         ],
                       ),
-                      
+
                       const SizedBox(height: 32),
-                      
+
                       // Preferences Section
                       Container(
                         padding: const EdgeInsets.all(24),
@@ -475,7 +583,7 @@ class _CarpoolFormPageState extends State<CarpoolFormPage> {
                               ),
                             ),
                             const SizedBox(height: 20),
-                            
+
                             // Smoking Allowed
                             Row(
                               children: [
@@ -506,9 +614,9 @@ class _CarpoolFormPageState extends State<CarpoolFormPage> {
                                 ),
                               ],
                             ),
-                            
+
                             const SizedBox(height: 16),
-                            
+
                             // Pets Allowed
                             Row(
                               children: [
@@ -542,9 +650,9 @@ class _CarpoolFormPageState extends State<CarpoolFormPage> {
                           ],
                         ),
                       ),
-                      
+
                       const SizedBox(height: 24),
-                      
+
                       // Vehicle Information Section
                       Container(
                         padding: const EdgeInsets.all(24),
@@ -564,7 +672,7 @@ class _CarpoolFormPageState extends State<CarpoolFormPage> {
                               ),
                             ),
                             const SizedBox(height: 20),
-                            
+
                             // Vehicle Make and Model
                             Row(
                               children: [
@@ -597,9 +705,9 @@ class _CarpoolFormPageState extends State<CarpoolFormPage> {
                                 ),
                               ],
                             ),
-                            
+
                             const SizedBox(height: 16),
-                            
+
                             // Vehicle Year and Color
                             Row(
                               children: [
@@ -614,7 +722,9 @@ class _CarpoolFormPageState extends State<CarpoolFormPage> {
                                         return 'Required';
                                       }
                                       final year = int.tryParse(value);
-                                      if (year == null || year < 1990 || year > DateTime.now().year + 1) {
+                                      if (year == null ||
+                                          year < 1990 ||
+                                          year > DateTime.now().year + 1) {
                                         return 'Invalid year';
                                       }
                                       return null;
@@ -645,9 +755,9 @@ class _CarpoolFormPageState extends State<CarpoolFormPage> {
                           ],
                         ),
                       ),
-                      
+
                       const SizedBox(height: 24),
-                      
+
                       // Additional Info
                       Container(
                         height: 120,
@@ -664,7 +774,8 @@ class _CarpoolFormPageState extends State<CarpoolFormPage> {
                             fontWeight: FontWeight.w400,
                           ),
                           decoration: const InputDecoration(
-                            hintText: 'Additional Information (e.g., "Please be on time. Luggage space is limited.")',
+                            hintText:
+                                'Additional Information (e.g., "Please be on time. Luggage space is limited.")',
                             hintStyle: TextStyle(
                               color: AppColors.textLight,
                               fontSize: 16,
@@ -683,16 +794,16 @@ class _CarpoolFormPageState extends State<CarpoolFormPage> {
                           ),
                         ),
                       ),
-                      
+
                       const SizedBox(height: 40),
-                      
+
                       // Submit button
                       CustomButton(
                         text: 'Create Carpool',
                         onPressed: _submitForm,
                         isLoading: _isLoading,
                       ),
-                      
+
                       const SizedBox(height: 40),
                     ],
                   ),

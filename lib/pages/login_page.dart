@@ -38,10 +38,10 @@ class _LoginPageState extends State<LoginPage> {
 
       try {
         final response = await http.post(
-          Uri.parse(dotenv.env['API_URL']! + '/api/users/login'),
+          Uri.parse('${dotenv.env['API_URL']!}/api/users/login'),
           headers: {'Content-Type': 'application/json'},
           body: jsonEncode({
-            'email': _emailController.text.trim(),
+            'email': _emailController.text.trim().toLowerCase(),
             'password': _passwordController.text.trim(),
           }),
         );
@@ -59,14 +59,10 @@ class _LoginPageState extends State<LoginPage> {
           await prefs.setString('loggedInUser', jsonEncode(user.toJson()));
 
           if (mounted) {
-            if (user.role == "user") {
+            if (user.role == "user" ||
+                user.role == "driver" ||
+                user.role == "carpool_driver") {
               Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (_) => const HomePage()),
-              );
-            }
-            if (user.role == "driver") {
-               Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(builder: (_) => const HomePage()),
               );
@@ -120,9 +116,9 @@ class _LoginPageState extends State<LoginPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const SizedBox(height: 60),
-                        Column(
+                        const Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          children: const [
+                          children: [
                             Text(
                               'Welcome',
                               style: TextStyle(

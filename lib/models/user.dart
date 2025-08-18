@@ -23,19 +23,19 @@ class User {
 
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
-      id: json['id'] ?? '',
+      id: json['id'] ?? json['_id']?['\$oid'] ?? '', // handle Mongo ObjectId
       fullName: json['fullName'] ?? '',
       email: json['email'] ?? '',
       phoneNumber: json['phoneNumber'] ?? '',
       photoURL: json['photoURL'] ?? '',
       role: json['role'] ?? '',
-      driverDetails: json['driverDetails'] != null
+      driverDetails: json['driverDetails'] != null && json['driverDetails'] is Map
           ? DriverDetails.fromJson(json['driverDetails'])
           : null,
-      carpoolDetails: json['carpoolDetails'] != null
+      carpoolDetails: json['carpoolDetails'] != null && json['carpoolDetails'] is Map
           ? CarpoolDetails.fromJson(json['carpoolDetails'])
           : null,
-      cargoDetails: json['cargoDetails'] != null
+      cargoDetails: json['cargoDetails'] != null && json['cargoDetails'] is Map
           ? CargoDetails.fromJson(json['cargoDetails'])
           : null,
     );
@@ -66,7 +66,7 @@ class DriverDetails {
   final int numberOfSeats;
   final String serviceAreas;
   final String preferredWorkingHours;
-  final double pricePerKm;
+  final double price4km;
 
   DriverDetails({
     required this.city,
@@ -78,8 +78,16 @@ class DriverDetails {
     required this.numberOfSeats,
     required this.serviceAreas,
     required this.preferredWorkingHours,
-    this.pricePerKm = 1.2, // Default value for pricePerKm
+    this.price4km = 1.2,
   });
+
+  static double _parseDouble(dynamic value, [double defaultValue = 0.0]) {
+    if (value == null) return defaultValue;
+    if (value is int) return value.toDouble();
+    if (value is double) return value;
+    if (value is String) return double.tryParse(value) ?? defaultValue;
+    return defaultValue;
+  }
 
   factory DriverDetails.fromJson(Map<String, dynamic> json) {
     return DriverDetails(
@@ -92,9 +100,10 @@ class DriverDetails {
       numberOfSeats: json['numberOfSeats'] ?? 0,
       serviceAreas: json['serviceAreas'] ?? '',
       preferredWorkingHours: json['preferredWorkingHours'] ?? '',
-      pricePerKm: (json['pricePerKm'] ?? 1.2).toDouble(),
+      price4km: _parseDouble(json['price4km'], 1.2),
     );
   }
+
   Map<String, dynamic> toJson() {
     return {
       'city': city,
@@ -106,7 +115,7 @@ class DriverDetails {
       'numberOfSeats': numberOfSeats,
       'serviceAreas': serviceAreas,
       'preferredWorkingHours': preferredWorkingHours,
-      'pricePerKm': pricePerKm,
+      'price4km': price4km,
     };
   }
 }
@@ -126,6 +135,7 @@ class CarpoolDetails {
   final String vehicleModel;
   final int vehicleYear;
   final String vehicleColor;
+  final List<User> passengers; // ✅ NEW
 
   CarpoolDetails({
     required this.fromLocation,
@@ -142,16 +152,25 @@ class CarpoolDetails {
     required this.vehicleModel,
     required this.vehicleYear,
     required this.vehicleColor,
+    this.passengers = const [], // ✅ NEW default empty
   });
+
+  static double _parseDouble(dynamic value, [double defaultValue = 0.0]) {
+    if (value == null) return defaultValue;
+    if (value is int) return value.toDouble();
+    if (value is double) return value;
+    if (value is String) return double.tryParse(value) ?? defaultValue;
+    return defaultValue;
+  }
 
   factory CarpoolDetails.fromJson(Map<String, dynamic> json) {
     return CarpoolDetails(
       fromLocation: json['fromLocation'] ?? '',
       toLocation: json['toLocation'] ?? '',
-      departureDate: json['departureDate'] ?? '',
-      departureTime: json['departureTime'] ?? '',
+      departureDate: json['departureDate']?.toString() ?? '',
+      departureTime: json['departureTime']?.toString() ?? '',
       availableSeats: json['availableSeats'] ?? 0,
-      pricePerSeat: (json['pricePerSeat'] ?? 0).toDouble(),
+      pricePerSeat: _parseDouble(json['pricePerSeat']),
       isRecurring: json['isRecurring'] ?? false,
       smokingAllowed: json['smokingAllowed'] ?? false,
       petsAllowed: json['petsAllowed'] ?? false,
@@ -160,8 +179,12 @@ class CarpoolDetails {
       vehicleModel: json['vehicleModel'] ?? '',
       vehicleYear: json['vehicleYear'] ?? 0,
       vehicleColor: json['vehicleColor'] ?? '',
+      passengers: (json['passengers'] as List<dynamic>? ?? [])
+          .map((p) => User.fromJson(p))
+          .toList(), // ✅ map list of users
     );
   }
+
   Map<String, dynamic> toJson() {
     return {
       'fromLocation': fromLocation,
@@ -178,6 +201,7 @@ class CarpoolDetails {
       'vehicleModel': vehicleModel,
       'vehicleYear': vehicleYear,
       'vehicleColor': vehicleColor,
+      'passengers': passengers.map((p) => p.toJson()).toList(), // ✅ include in JSON
     };
   }
 }
@@ -213,6 +237,14 @@ class CargoDetails {
     required this.serviceDescription,
   });
 
+  static double _parseDouble(dynamic value, [double defaultValue = 0.0]) {
+    if (value == null) return defaultValue;
+    if (value is int) return value.toDouble();
+    if (value is double) return value;
+    if (value is String) return double.tryParse(value) ?? defaultValue;
+    return defaultValue;
+  }
+
   factory CargoDetails.fromJson(Map<String, dynamic> json) {
     return CargoDetails(
       companyName: json['companyName'] ?? '',
@@ -225,11 +257,12 @@ class CargoDetails {
       maxWeightCapacityKg: json['maxWeightCapacityKg'] ?? 0,
       maxDimensionsCm: json['maxDimensionsCm'] ?? '',
       serviceAreas: json['serviceAreas'] ?? '',
-      pricePerKm: (json['pricePerKm'] ?? 0).toDouble(),
-      minimumCharge: (json['minimumCharge'] ?? 0).toDouble(),
+      pricePerKm: _parseDouble(json['pricePerKm']),
+      minimumCharge: _parseDouble(json['minimumCharge']),
       serviceDescription: json['serviceDescription'] ?? '',
     );
   }
+
   Map<String, dynamic> toJson() {
     return {
       'companyName': companyName,

@@ -79,7 +79,7 @@ class _SignupPageState extends State<SignupPage> {
             "password": _passwordController.text.trim(),
             "phoneNumber": _phoneController.text.trim(),
             "dateOfBirth": _dateOfBirthController.text.trim(),
-            "role": "carpool_driver", // or let user choose dynamically
+            "role": "user", // or let user choose dynamically
           }),
         );
 

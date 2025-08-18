@@ -63,7 +63,7 @@ class _RidePageState extends State<RidePage> {
   Future<void> _fetchDrivers() async {
     try {
       final response = await http.get(
-        Uri.parse(dotenv.env['API_URL']! + '/api/users'),
+        Uri.parse('${dotenv.env['API_URL']!}/api/users'),
       );
 
       if (response.statusCode == 200) {
@@ -133,7 +133,7 @@ class _RidePageState extends State<RidePage> {
       final sourceList = filteredDrivers.isNotEmpty ? filteredDrivers : drivers;
       double minPricePerKm = double.infinity;
       for (final d in sourceList) {
-        final p = d.driverDetails?.pricePerKm;
+        final p = d.driverDetails?.price4km;
         if (p != null && p < minPricePerKm) {
           minPricePerKm = p;
         }
@@ -221,7 +221,7 @@ class _RidePageState extends State<RidePage> {
         double minPricePerKm = double.infinity;
         for (final d
             in filteredDrivers.isNotEmpty ? filteredDrivers : drivers) {
-          final p = d.driverDetails?.pricePerKm;
+          final p = d.driverDetails?.price4km;
           if (p != null && p < minPricePerKm) {
             minPricePerKm = p;
           }
@@ -687,11 +687,11 @@ class _DriverCard extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Builder(builder: (context) {
-                          final perKm = driver.driverDetails?.pricePerKm ?? 1.2;
+                          final perKm = driver.driverDetails?.price4km ?? 1.2;
                           final price = routeDistance! * perKm;
                           return Text(
                             'Estimated Cost: ${price.toStringAsFixed(2)} TND',
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w700,
                               color: AppColors.primary,
@@ -885,8 +885,9 @@ class _DriverCard extends StatelessWidget {
                   if (routeDistance != null)
                     "estimatedPrice": double.parse(
                       (routeDistance! *
-                              (driver.driverDetails?.pricePerKm ?? 1.2))
+                              (driver.driverDetails?.price4km ?? 1.2))
                           .toStringAsFixed(2),
+ 
                     ),
                 };
 
@@ -932,7 +933,7 @@ class _DriverCard extends StatelessWidget {
               ),
               child: Text(
                 routeDistance != null
-                    ? 'Book Now - ${(routeDistance! * (driver.driverDetails?.pricePerKm ?? 1.2)).toStringAsFixed(2)} TND'
+                    ? 'Book Now - ${(routeDistance! * (driver.driverDetails?.price4km ?? 1.2)).toStringAsFixed(2)} TND'
                     : 'Book Now',
                 style: const TextStyle(
                   fontSize: 16,
@@ -959,7 +960,7 @@ class MapPickerPage extends StatefulWidget {
 
 class _MapPickerPageState extends State<MapPickerPage> {
   // Default to Tunis coordinates if not provided
-  LatLng selectedPoint = LatLng(36.8065, 10.1815);
+  LatLng selectedPoint = const LatLng(36.8065, 10.1815);
 
   @override
   void initState() {

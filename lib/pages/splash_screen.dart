@@ -173,9 +173,9 @@ class _SplashScreenState extends State<SplashScreen>
                   position: _slideAnimation,
                   child: FadeTransition(
                     opacity: _fadeAnimation,
-                    child: Column(
+                    child: const Column(
                       children: [
-                        const Text(
+                        Text(
                           "GoRide",
                           style: TextStyle(
                             color: AppColors.textDark,
@@ -185,8 +185,8 @@ class _SplashScreenState extends State<SplashScreen>
                             height: 1.1,
                           ),
                         ),
-                        const SizedBox(height: 12),
-                        const Text(
+                        SizedBox(height: 12),
+                        Text(
                           "Smart transportation",
                           style: TextStyle(
                             color: AppColors.textMedium,
@@ -195,7 +195,7 @@ class _SplashScreenState extends State<SplashScreen>
                             height: 1.4,
                           ),
                         ),
-                        const Text(
+                        Text(
                           "at your fingertips",
                           style: TextStyle(
                             color: AppColors.primary,
@@ -222,7 +222,7 @@ class _SplashScreenState extends State<SplashScreen>
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(20),
                         ),
-                        child: CircularProgressIndicator(
+                        child: const CircularProgressIndicator(
                           color: AppColors.primary,
                           strokeWidth: 3,
                           backgroundColor: AppColors.lightGray,

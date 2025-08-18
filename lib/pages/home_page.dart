@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:psmp_new/pages/covoiturage_page.dart';
-import 'package:psmp_new/pages/driver_form_page.dart';
 import 'package:psmp_new/pages/login_page.dart';
 import 'package:psmp_new/pages/ride_page.dart';
 import 'package:psmp_new/pages/service_selection_page.dart';
 import 'package:psmp_new/pages/transporteur_page.dart';
+import 'package:psmp_new/pages/carpool_driver_dashboard.dart';
 import '../models/sessionManager.dart';
 import '../models/user.dart';
 import '../utils/app_colors.dart';
@@ -27,7 +27,7 @@ class HomePage extends StatelessWidget {
     try {
       final response = await http.get(
         Uri.parse(
-            dotenv.env['API_URL']! + '/api/reservations/driver/$driverId'),
+            '${dotenv.env['API_URL']!}/api/reservations/driver/$driverId'),
         headers: {
           'Content-Type': 'application/json',
         },
@@ -49,7 +49,7 @@ class HomePage extends StatelessWidget {
   Future<Map<String, dynamic>> _getUserById(String userId) async {
     try {
       final response = await http.get(
-        Uri.parse(dotenv.env['API_URL']! + '/api/users/$userId'),
+        Uri.parse('${dotenv.env['API_URL']!}/api/users/$userId'),
         headers: {
           'Content-Type': 'application/json',
         },
@@ -78,12 +78,12 @@ class HomePage extends StatelessWidget {
   Future<List<Map<String, dynamic>>> _loadMergedReservations() async {
     try {
       final User? currentUser = SessionManager().getUser();
-      if (currentUser == null || currentUser.id == null) {
+      if (currentUser == null) {
         throw Exception('No user logged in');
       }
 
       // Step 1: Get reservations for the current driver
-      final reservations = await _getReservationsByDriverId(currentUser.id!);
+      final reservations = await _getReservationsByDriverId(currentUser.id);
 
       // Step 2: Get unique client and driver IDs
       final Set<String> userIds = {};
@@ -126,7 +126,8 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final User? user = SessionManager().getUser();
-    final bool isUserRole = user?.role?.toLowerCase() != 'user';
+    final bool isUserRole = user?.role.toLowerCase() != 'user';
+    print('Current user: ${user?.fullName}, Role: ${user?.role}');
 
     return Scaffold(
       backgroundColor: AppColors.backgroundWhite,
@@ -192,7 +193,140 @@ class HomePage extends StatelessWidget {
               const SizedBox(height: 60),
 
               // Conditional content based on user role
-              if (!isUserRole) ...[
+              if (user?.role.toLowerCase() == 'carpool_driver') ...[
+                // Carpool Driver Dashboard
+                const Text(
+                  'My',
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textMedium,
+                    height: 1.2,
+                  ),
+                ),
+                const Text(
+                  'Carpool',
+                  style: TextStyle(
+                    fontSize: 40,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.primary,
+                    letterSpacing: -0.5,
+                    height: 1.1,
+                  ),
+                ),
+
+                const SizedBox(height: 30),
+
+                // Carpool Driver Dashboard Card
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const CarpoolDriverDashboard(),
+                        ),
+                      );
+                    },
+                    child: Container(
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(24),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.08),
+                            blurRadius: 20,
+                            offset: const Offset(0, 8),
+                            spreadRadius: 0,
+                          ),
+                        ],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(24),
+                        child: Stack(
+                          children: [
+                            // Background image
+                            Positioned.fill(
+                              child: Image.asset(
+                                'assets/images/carpool.jpg',
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Container(
+                                    color: AppColors.lightGray,
+                                    child: const Icon(
+                                      Icons.people_outline,
+                                      size: 48,
+                                      color: AppColors.textLight,
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                            // Overlay with low opacity
+                            Positioned.fill(
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: AppColors.textDark.withOpacity(0.3),
+                                ),
+                              ),
+                            ),
+                            // Content
+                            Positioned.fill(
+                              child: Padding(
+                                padding: const EdgeInsets.all(24),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: [
+                                    const Text(
+                                      'My Carpool Dashboard',
+                                      style: TextStyle(
+                                        fontSize: 28,
+                                        fontWeight: FontWeight.w800,
+                                        color: Colors.white,
+                                        letterSpacing: -0.5,
+                                        height: 1.1,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    const Text(
+                                      'View your carpool details and passengers',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w500,
+                                        color: Colors.white,
+                                        height: 1.3,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            // Tap indicator
+                            Positioned(
+                              top: 20,
+                              right: 20,
+                              child: Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(
+                                  Icons.arrow_forward_ios,
+                                  color: Colors.white,
+                                  size: 18,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ] else if (!isUserRole) ...[
                 // Services title (only shown for non-user roles)
                 const Text(
                   'Choose your',
@@ -254,7 +388,7 @@ class HomePage extends StatelessWidget {
                                     context,
                                     MaterialPageRoute(
                                         builder: (context) =>
-                                            const CovoituragePage()),
+                                            const CarpoolPage()),
                                   );
                                 },
                                 imageAssetPath: 'assets/images/carpool.jpg',
@@ -383,7 +517,7 @@ class HomePage extends StatelessWidget {
                                 color: Colors.red.withOpacity(0.6),
                               ),
                               const SizedBox(height: 16),
-                              Text(
+                              const Text(
                                 'Error loading reservations',
                                 style: TextStyle(
                                   fontSize: 16,
@@ -418,7 +552,7 @@ class HomePage extends StatelessWidget {
                                 color: AppColors.textMedium.withOpacity(0.6),
                               ),
                               const SizedBox(height: 16),
-                              Text(
+                              const Text(
                                 'No reservations found',
                                 style: TextStyle(
                                   fontSize: 16,
@@ -627,66 +761,66 @@ class _ReservationCard extends StatelessWidget {
               ),
 
               // Add pickup and dropoff locations if available
-              if (reservation['pickupLocation'] != null ||
-                  reservation['dropoffLocation'] != null) ...[
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: AppColors.lightGray.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (reservation['pickupLocation'] != null) ...[
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.my_location,
-                              color: Colors.green,
-                              size: 18,
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                'Pickup: ${reservation['pickupLocation']}',
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                  color: AppColors.textDark,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                      ],
-                      if (reservation['dropoffLocation'] != null)
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.location_on,
-                              color: Colors.red,
-                              size: 18,
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                'Dropoff: ${reservation['dropoffLocation']}',
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                  color: AppColors.textDark,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                    ],
-                  ),
-                ),
-              ],
+              // if (reservation['pickupLocation'] != null ||
+              //     reservation['dropoffLocation'] != null) ...[
+              //   const SizedBox(height: 16),
+              //   Container(
+              //     padding: const EdgeInsets.all(16),
+              //     decoration: BoxDecoration(
+              //       color: AppColors.lightGray.withOpacity(0.2),
+              //       borderRadius: BorderRadius.circular(12),
+              //     ),
+              //     child: Column(
+              //       crossAxisAlignment: CrossAxisAlignment.start,
+              //       children: [
+              //         if (reservation['pickupLocation'] != null) ...[
+              //           Row(
+              //             children: [
+              //               Icon(
+              //                 Icons.my_location,
+              //                 color: Colors.green,
+              //                 size: 18,
+              //               ),
+              //               const SizedBox(width: 8),
+              //               Expanded(
+              //                 child: Text(
+              //                   'Pickup: ${reservation['pickupLocation']}',
+              //                   style: const TextStyle(
+              //                     fontSize: 14,
+              //                     fontWeight: FontWeight.w500,
+              //                     color: AppColors.textDark,
+              //                   ),
+              //                 ),
+              //               ),
+              //             ],
+              //           ),
+              //           const SizedBox(height: 8),
+              //         ],
+              //         if (reservation['dropoffLocation'] != null)
+              //           Row(
+              //             children: [
+              //               Icon(
+              //                 Icons.location_on,
+              //                 color: Colors.red,
+              //                 size: 18,
+              //               ),
+              //               const SizedBox(width: 8),
+              //               Expanded(
+              //                 child: Text(
+              //                   'Dropoff: ${reservation['dropoffLocation']}',
+              //                   style: const TextStyle(
+              //                     fontSize: 14,
+              //                     fontWeight: FontWeight.w500,
+              //                     color: AppColors.textDark,
+              //                   ),
+              //                 ),
+              //               ),
+              //             ],
+              //           ),
+              //       ],
+              //     ),
+              //   ),
+              // ],
 
               const SizedBox(height: 24),
 
@@ -718,15 +852,15 @@ class _ReservationCard extends StatelessWidget {
 
               // Client section
               if (client != null) ...[
-                Row(
+                const Row(
                   children: [
                     Icon(
                       Icons.person,
                       color: Colors.green,
                       size: 20,
                     ),
-                    const SizedBox(width: 8),
-                    const Text(
+                    SizedBox(width: 8),
+                    Text(
                       'Client',
                       style: TextStyle(
                         fontSize: 16,
@@ -754,7 +888,7 @@ class _ReservationCard extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        Icon(
+                        const Icon(
                           Icons.access_time,
                           color: AppColors.textMedium,
                           size: 18,
@@ -774,7 +908,7 @@ class _ReservationCard extends StatelessWidget {
                       const SizedBox(height: 8),
                       Row(
                         children: [
-                          Icon(
+                          const Icon(
                             Icons.schedule,
                             color: AppColors.primary,
                             size: 18,
@@ -998,7 +1132,7 @@ class _DataCard extends StatelessWidget {
         ),
         subtitle: Text(
           subtitle,
-          style: TextStyle(
+          style: const TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w500,
             color: AppColors.textMedium,
@@ -1201,7 +1335,8 @@ class _RouteMapPageState extends State<RouteMapPage> {
 
   Future<void> _fetchRoute() async {
     try {
-      final apiKey = "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImNmZWQyMmJjZWRlODRlZjFhYTUzZjg3OTkyYWU3NWRlIiwiaCI6Im11cm11cjY0In0="; // Replace with your key
+      const apiKey =
+          "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImNmZWQyMmJjZWRlODRlZjFhYTUzZjg3OTkyYWU3NWRlIiwiaCI6Im11cm11cjY0In0="; // Replace with your key
       final url = Uri.parse(
         "https://api.openrouteservice.org/v2/directions/driving-car?api_key=$apiKey&start=${widget.pickup.longitude},${widget.pickup.latitude}&end=${widget.dropoff.longitude},${widget.dropoff.latitude}",
       );
