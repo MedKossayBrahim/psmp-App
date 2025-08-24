@@ -61,7 +61,8 @@ class _LoginPageState extends State<LoginPage> {
           if (mounted) {
             if (user.role == "user" ||
                 user.role == "driver" ||
-                user.role == "carpool_driver") {
+                user.role == "carpool_driver" ||
+                user.role == "cargo") {
               Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(builder: (_) => const HomePage()),

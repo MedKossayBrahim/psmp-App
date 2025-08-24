@@ -22,7 +22,7 @@ class _CarpoolPageState extends State<CarpoolPage> {
   // Filter controllers
   final TextEditingController _fromController = TextEditingController();
   final TextEditingController _toController = TextEditingController();
-  
+
   String selectedCity = 'All';
   int? selectedSeats;
   String? selectedWorkingHours;
@@ -32,11 +32,36 @@ class _CarpoolPageState extends State<CarpoolPage> {
 
   // Tunisian cities list
   final List<String> tunisianCities = [
-    'Tunis', 'Sfax', 'Sousse', 'Kairouan', 'Bizerte', 'Gabès', 'Ariana',
-    'Gafsa', 'Monastir', 'Ben Arous', 'Kasserine', 'Médenine', 'Nabeul',
-    'Tataouine', 'Béja', 'Jendouba', 'Mahdia', 'Siliana', 'Manouba',
-    'Zaghouan', 'Tozeur', 'Kébili', 'Le Kef', 'Sidi Bouzid', 'Hammamet',
-    'La Marsa', 'Carthage', 'Skhira', 'Djerba', 'Zarzis'
+    'Tunis',
+    'Sfax',
+    'Sousse',
+    'Kairouan',
+    'Bizerte',
+    'Gabès',
+    'Ariana',
+    'Gafsa',
+    'Monastir',
+    'Ben Arous',
+    'Kasserine',
+    'Médenine',
+    'Nabeul',
+    'Tataouine',
+    'Béja',
+    'Jendouba',
+    'Mahdia',
+    'Siliana',
+    'Manouba',
+    'Zaghouan',
+    'Tozeur',
+    'Kébili',
+    'Le Kef',
+    'Sidi Bouzid',
+    'Hammamet',
+    'La Marsa',
+    'Carthage',
+    'Skhira',
+    'Djerba',
+    'Zarzis'
   ];
 
   @override
@@ -54,31 +79,32 @@ class _CarpoolPageState extends State<CarpoolPage> {
 
   /// Fetch carpool drivers from API and keep only users with role == "carpool_driver".
   Future<void> _fetchCarpoolDrivers() async {
-  try {
-    final response = await http.get(
-      Uri.parse('${dotenv.env['API_URL']!}/api/users'),
-    );
+    try {
+      final response = await http.get(
+        Uri.parse('${dotenv.env['API_URL']!}/api/users'),
+      );
 
-    if (response.statusCode == 200) {
-      final List<dynamic> jsonData = json.decode(response.body);
+      if (response.statusCode == 200) {
+        final List<dynamic> jsonData = json.decode(response.body);
+        setState(() {
+          carpoolDrivers = jsonData
+              .map((json) => User.fromJson(json))
+              .where(
+                  (u) => u.role == "carpool_driver" && u.carpoolDetails != null)
+              .toList();
+          filteredCarpoolDrivers = List.from(carpoolDrivers);
+          isLoading = false;
+        });
+      } else {
+        throw Exception('Failed to load carpool drivers');
+      }
+    } catch (e) {
       setState(() {
-        carpoolDrivers = jsonData
-            .map((json) => User.fromJson(json))
-            .where((u) => u.role == "carpool_driver" && u.carpoolDetails != null)
-            .toList();
-        filteredCarpoolDrivers = List.from(carpoolDrivers);
         isLoading = false;
+        errorMessage = 'Error: $e';
       });
-    } else {
-      throw Exception('Failed to load carpool drivers');
     }
-  } catch (e) {
-    setState(() {
-      isLoading = false;
-      errorMessage = 'Error: $e';
-    });
   }
-}
 
   /// Reset all filters
   void _resetFilters() {
@@ -102,23 +128,28 @@ class _CarpoolPageState extends State<CarpoolPage> {
 
         // From location filter
         final matchesFrom = _fromController.text.isEmpty ||
-            details.fromLocation.toLowerCase().contains(_fromController.text.toLowerCase());
+            details.fromLocation
+                .toLowerCase()
+                .contains(_fromController.text.toLowerCase());
 
         // To location filter
         final matchesTo = _toController.text.isEmpty ||
-            details.toLocation.toLowerCase().contains(_toController.text.toLowerCase());
+            details.toLocation
+                .toLowerCase()
+                .contains(_toController.text.toLowerCase());
 
         // Available seats filter
-        final matchesSeats = selectedSeats == null ||
-            details.availableSeats >= selectedSeats!;
+        final matchesSeats =
+            selectedSeats == null || details.availableSeats >= selectedSeats!;
 
         // Date filter
         bool matchesDate = true;
         if (selectedDate != null) {
           final tripDate = details.departureDate;
           if (tripDate != null) {
-            matchesDate = DateFormat('yyyy-MM-dd').format(tripDate as DateTime) ==
-                DateFormat('yyyy-MM-dd').format(selectedDate!);
+            matchesDate =
+                DateFormat('yyyy-MM-dd').format(tripDate as DateTime) ==
+                    DateFormat('yyyy-MM-dd').format(selectedDate!);
           }
         }
 
@@ -128,7 +159,8 @@ class _CarpoolPageState extends State<CarpoolPage> {
   }
 
   /// Show location selection bottom sheet
-  void _showLocationBottomSheet(TextEditingController controller, String title) {
+  void _showLocationBottomSheet(
+      TextEditingController controller, String title) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -281,7 +313,8 @@ class _CarpoolPageState extends State<CarpoolPage> {
 
                   // From location selector
                   GestureDetector(
-                    onTap: () => _showLocationBottomSheet(_fromController, 'From Location'),
+                    onTap: () => _showLocationBottomSheet(
+                        _fromController, 'From Location'),
                     child: Container(
                       margin: const EdgeInsets.only(bottom: 12),
                       padding: const EdgeInsets.all(14),
@@ -291,23 +324,27 @@ class _CarpoolPageState extends State<CarpoolPage> {
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.location_on_outlined, color: AppColors.primary),
+                          const Icon(Icons.location_on_outlined,
+                              color: AppColors.primary),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
-                              _fromController.text.isEmpty ? 'From Location' : _fromController.text,
+                              _fromController.text.isEmpty
+                                  ? 'From Location'
+                                  : _fromController.text,
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
-                                color: _fromController.text.isEmpty 
-                                    ? AppColors.textMedium 
+                                color: _fromController.text.isEmpty
+                                    ? AppColors.textMedium
                                     : AppColors.textDark,
                               ),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           const SizedBox(width: 8),
-                          const Icon(Icons.keyboard_arrow_down, color: AppColors.textMedium),
+                          const Icon(Icons.keyboard_arrow_down,
+                              color: AppColors.textMedium),
                         ],
                       ),
                     ),
@@ -315,7 +352,8 @@ class _CarpoolPageState extends State<CarpoolPage> {
 
                   // To location selector
                   GestureDetector(
-                    onTap: () => _showLocationBottomSheet(_toController, 'To Location'),
+                    onTap: () =>
+                        _showLocationBottomSheet(_toController, 'To Location'),
                     child: Container(
                       margin: const EdgeInsets.only(bottom: 12),
                       padding: const EdgeInsets.all(14),
@@ -325,23 +363,27 @@ class _CarpoolPageState extends State<CarpoolPage> {
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.location_on, color: AppColors.primary),
+                          const Icon(Icons.location_on,
+                              color: AppColors.primary),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
-                              _toController.text.isEmpty ? 'To Location' : _toController.text,
+                              _toController.text.isEmpty
+                                  ? 'To Location'
+                                  : _toController.text,
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
-                                color: _toController.text.isEmpty 
-                                    ? AppColors.textMedium 
+                                color: _toController.text.isEmpty
+                                    ? AppColors.textMedium
                                     : AppColors.textDark,
                               ),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           const SizedBox(width: 8),
-                          const Icon(Icons.keyboard_arrow_down, color: AppColors.textMedium),
+                          const Icon(Icons.keyboard_arrow_down,
+                              color: AppColors.textMedium),
                         ],
                       ),
                     ),
@@ -405,7 +447,8 @@ class _CarpoolPageState extends State<CarpoolPage> {
           padding: const EdgeInsets.only(bottom: 24),
           child: _CarpoolCard(
             driver: carpoolDriver,
-            onBookingComplete: _fetchCarpoolDrivers, // Refresh list after booking
+            onBookingComplete:
+                _fetchCarpoolDrivers, // Refresh list after booking
           ),
         );
       },
@@ -426,7 +469,7 @@ class _CarpoolCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final carpoolDetails = driver.carpoolDetails!;
-    
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -522,7 +565,8 @@ class _CarpoolCard extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.calendar_today, color: AppColors.primary, size: 20),
+                    const Icon(Icons.calendar_today,
+                        color: AppColors.primary, size: 20),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
@@ -534,7 +578,8 @@ class _CarpoolCard extends StatelessWidget {
                         ),
                       ),
                     ),
-                    const Icon(Icons.access_time, color: AppColors.primary, size: 20),
+                    const Icon(Icons.access_time,
+                        color: AppColors.primary, size: 20),
                     const SizedBox(width: 8),
                     Text(
                       carpoolDetails.departureTime,
@@ -549,7 +594,8 @@ class _CarpoolCard extends StatelessWidget {
                 const SizedBox(height: 12),
                 Row(
                   children: [
-                    const Icon(Icons.people_outline, color: AppColors.primary, size: 20),
+                    const Icon(Icons.people_outline,
+                        color: AppColors.primary, size: 20),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
@@ -629,18 +675,24 @@ class _CarpoolCard extends StatelessWidget {
                         padding: EdgeInsets.only(right: 12),
                         child: Row(
                           children: [
-                            Icon(Icons.smoking_rooms, color: AppColors.textMedium, size: 16),
+                            Icon(Icons.smoking_rooms,
+                                color: AppColors.textMedium, size: 16),
                             SizedBox(width: 4),
-                            Text('Smoking', style: TextStyle(fontSize: 12, color: AppColors.textMedium)),
+                            Text('Smoking',
+                                style: TextStyle(
+                                    fontSize: 12, color: AppColors.textMedium)),
                           ],
                         ),
                       ),
                     if (carpoolDetails.petsAllowed)
                       const Row(
                         children: [
-                          Icon(Icons.pets, color: AppColors.textMedium, size: 16),
+                          Icon(Icons.pets,
+                              color: AppColors.textMedium, size: 16),
                           SizedBox(width: 4),
-                          Text('Pets OK', style: TextStyle(fontSize: 12, color: AppColors.textMedium)),
+                          Text('Pets OK',
+                              style: TextStyle(
+                                  fontSize: 12, color: AppColors.textMedium)),
                         ],
                       ),
                   ],
@@ -691,12 +743,14 @@ class _CarpoolCard extends StatelessWidget {
             width: double.infinity,
             height: 50,
             child: ElevatedButton(
-              onPressed: carpoolDetails.availableSeats > 0 ? () async {
-                await _handleBooking(context, driver, onBookingComplete);
-              } : null,
+              onPressed: carpoolDetails.availableSeats > 0
+                  ? () async {
+                      await _handleBooking(context, driver, onBookingComplete);
+                    }
+                  : null,
               style: ElevatedButton.styleFrom(
-                backgroundColor: carpoolDetails.availableSeats > 0 
-                    ? AppColors.primary 
+                backgroundColor: carpoolDetails.availableSeats > 0
+                    ? AppColors.primary
                     : Colors.grey,
                 foregroundColor: Colors.white,
                 elevation: 0,
@@ -705,7 +759,7 @@ class _CarpoolCard extends StatelessWidget {
                 ),
               ),
               child: Text(
-                carpoolDetails.availableSeats > 0 
+                carpoolDetails.availableSeats > 0
                     ? 'Book Seat - ${carpoolDetails.pricePerSeat.toStringAsFixed(0)} TND/seat'
                     : 'No Seats Available',
                 style: const TextStyle(
@@ -722,12 +776,12 @@ class _CarpoolCard extends StatelessWidget {
 
   /// Handle the booking process with confirmation dialog
   static Future<void> _handleBooking(
-    BuildContext context, 
+    BuildContext context,
     User driver,
     VoidCallback onBookingComplete,
   ) async {
     final carpoolDetails = driver.carpoolDetails!;
-    
+
     // Show confirmation dialog
     final confirmed = await showDialog<bool>(
       context: context,
@@ -775,7 +829,8 @@ class _CarpoolCard extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.route, color: AppColors.primary, size: 18),
+                      const Icon(Icons.route,
+                          color: AppColors.primary, size: 18),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
@@ -792,7 +847,8 @@ class _CarpoolCard extends StatelessWidget {
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      const Icon(Icons.schedule, color: AppColors.primary, size: 18),
+                      const Icon(Icons.schedule,
+                          color: AppColors.primary, size: 18),
                       const SizedBox(width: 8),
                       Text(
                         '${carpoolDetails.departureDate} at ${carpoolDetails.departureTime}',
@@ -807,7 +863,8 @@ class _CarpoolCard extends StatelessWidget {
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      const Icon(Icons.payments, color: AppColors.primary, size: 18),
+                      const Icon(Icons.payments,
+                          color: AppColors.primary, size: 18),
                       const SizedBox(width: 8),
                       Text(
                         '${carpoolDetails.pricePerSeat.toStringAsFixed(0)} TND per seat',
@@ -910,14 +967,15 @@ class _CarpoolCard extends StatelessWidget {
         _showSuccessSnackBar(context, "Carpool seat reserved successfully!");
         onBookingComplete(); // Refresh the list
       } else {
-        final errorMessage = response.body.contains("Error: ") 
+        final errorMessage = response.body.contains("Error: ")
             ? response.body
             : "Failed to reserve seat. Please try again.";
         _showErrorSnackBar(context, errorMessage);
       }
     } catch (e) {
       Navigator.pop(context); // Close loading dialog
-      _showErrorSnackBar(context, "Network error: Please check your connection and try again.");
+      _showErrorSnackBar(context,
+          "Network error: Please check your connection and try again.");
     }
   }
 

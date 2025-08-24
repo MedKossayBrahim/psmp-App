@@ -1,4 +1,10 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:http/http.dart' as http;
+import '../models/sessionManager.dart';
+import '../models/user.dart';
 import '../utils/app_colors.dart';
 import '../widgets/custom_text_field.dart';
 import '../widgets/custom_button.dart';
@@ -25,11 +31,18 @@ class _CargoFormPageState extends State<CargoFormPage> {
   final _pricePerKmController = TextEditingController();
   final _minimumChargeController = TextEditingController();
   final _serviceDescriptionController = TextEditingController();
-  
+
   bool _isLoading = false;
 
   final List<String> vehicleTypes = [
-    'Truck', 'Van', 'Pickup', 'Trailer', 'Container Truck', 'Refrigerated Truck', 'Flatbed', 'Other'
+    'Truck',
+    'Van',
+    'Pickup',
+    'Trailer',
+    'Container Truck',
+    'Refrigerated Truck',
+    'Flatbed',
+    'Other'
   ];
 
   @override
@@ -88,7 +101,9 @@ class _CargoFormPageState extends State<CargoFormPage> {
                       width: double.infinity,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       decoration: BoxDecoration(
-                        color: _vehicleTypeController.text == type ? AppColors.primary.withOpacity(0.1) : Colors.transparent,
+                        color: _vehicleTypeController.text == type
+                            ? AppColors.primary.withOpacity(0.1)
+                            : Colors.transparent,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
@@ -96,7 +111,9 @@ class _CargoFormPageState extends State<CargoFormPage> {
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w600,
-                          color: _vehicleTypeController.text == type ? AppColors.primary : AppColors.textDark,
+                          color: _vehicleTypeController.text == type
+                              ? AppColors.primary
+                              : AppColors.textDark,
                         ),
                       ),
                     ),
@@ -116,23 +133,82 @@ class _CargoFormPageState extends State<CargoFormPage> {
         _isLoading = true;
       });
 
-      // Simulate API call
-      await Future.delayed(const Duration(seconds: 2));
+      try {
+        // Get current user from session
+        final User? user = SessionManager().getUser();
+        if (user == null) {
+          throw Exception('User not found. Please login again.');
+        }
 
-      setState(() {
-        _isLoading = false;
-      });
+        // Prepare user data with cargoDetails as nested object
+        Map<String, dynamic> userData = user.toJson();
 
-      // Show success message
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Cargo service details saved successfully!'),
-            backgroundColor: AppColors.primary,
-            behavior: SnackBarBehavior.floating,
-          ),
+        userData['cargoDetails'] = {
+          'companyName': _companyNameController.text.trim(),
+          'contactPerson': _contactPersonController.text.trim(),
+          'businessLicense': _businessLicenseController.text.trim(),
+          'vehicleType': _vehicleTypeController.text.trim(),
+          'vehicleMake': _vehicleMakeController.text.trim(),
+          'vehicleModel': _vehicleModelController.text.trim(),
+          'vehicleYear': int.parse(_vehicleYearController.text.trim()),
+          'maxWeight': int.parse(_maxWeightController.text.trim()),
+          'maxDimensions': _maxDimensionsController.text.trim(),
+          'serviceAreas': _serviceAreasController.text.trim(),
+          'pricePerKm': double.parse(_pricePerKmController.text.trim()),
+          'minimumCharge': double.parse(_minimumChargeController.text.trim()),
+          'serviceDescription': _serviceDescriptionController.text.trim(),
+        };
+
+        // Also set the user role to cargo_driver
+        userData['role'] = 'cargo';
+
+        // Make API call
+        final response = await http.put(
+          Uri.parse('${dotenv.env['API_URL']!}/api/users/update'),
+          headers: {
+            'Content-Type': 'application/json; charset=utf-8',
+            'Accept': 'application/json',
+          },
+          body: jsonEncode(userData),
         );
-        Navigator.pop(context);
+
+        if (response.statusCode == 200) {
+          // Success - update session if needed
+          final updatedUserData = jsonDecode(response.body);
+           SessionManager().setUser(User.fromJson(updatedUserData));
+
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Cargo service details saved successfully!'),
+                backgroundColor: AppColors.primary,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+            Navigator.pop(context);
+          }
+        } else {
+          // Handle error response
+          final errorData = jsonDecode(response.body);
+          throw Exception(
+              errorData['message'] ?? 'Failed to save cargo details');
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error: ${e.toString()}'),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
       }
     }
   }
@@ -171,9 +247,9 @@ class _CargoFormPageState extends State<CargoFormPage> {
                       ),
                     ],
                   ),
-                  
+
                   const SizedBox(height: 40),
-                  
+
                   // Title
                   const Text(
                     'Cargo',
@@ -195,9 +271,9 @@ class _CargoFormPageState extends State<CargoFormPage> {
                       height: 1.1,
                     ),
                   ),
-                  
+
                   const SizedBox(height: 16),
-                  
+
                   const Text(
                     'Set up your cargo transport business',
                     style: TextStyle(
@@ -209,7 +285,7 @@ class _CargoFormPageState extends State<CargoFormPage> {
                 ],
               ),
             ),
-            
+
             // Form
             Expanded(
               child: SingleChildScrollView(
@@ -237,7 +313,6 @@ class _CargoFormPageState extends State<CargoFormPage> {
                               ),
                             ),
                             const SizedBox(height: 20),
-                            
                             CustomTextField(
                               hintText: 'Company Name (e.g., GoTransport SARL)',
                               prefixIcon: Icons.business_outlined,
@@ -249,9 +324,7 @@ class _CargoFormPageState extends State<CargoFormPage> {
                                 return null;
                               },
                             ),
-                            
                             const SizedBox(height: 16),
-                            
                             CustomTextField(
                               hintText: 'Contact Person (e.g., Ahmed Trabelsi)',
                               prefixIcon: Icons.person_outline,
@@ -263,11 +336,10 @@ class _CargoFormPageState extends State<CargoFormPage> {
                                 return null;
                               },
                             ),
-                            
                             const SizedBox(height: 16),
-                            
                             CustomTextField(
-                              hintText: 'Business License (e.g., TN-BIZ-0098765432)',
+                              hintText:
+                                  'Business License (e.g., TN-BIZ-0098765432)',
                               prefixIcon: Icons.verified_outlined,
                               controller: _businessLicenseController,
                               validator: (value) {
@@ -280,9 +352,9 @@ class _CargoFormPageState extends State<CargoFormPage> {
                           ],
                         ),
                       ),
-                      
+
                       const SizedBox(height: 24),
-                      
+
                       // Vehicle Information Section
                       Container(
                         padding: const EdgeInsets.all(24),
@@ -302,7 +374,7 @@ class _CargoFormPageState extends State<CargoFormPage> {
                               ),
                             ),
                             const SizedBox(height: 20),
-                            
+
                             // Vehicle Type
                             GestureDetector(
                               onTap: _showVehicleTypeBottomSheet,
@@ -320,9 +392,9 @@ class _CargoFormPageState extends State<CargoFormPage> {
                                 ),
                               ),
                             ),
-                            
+
                             const SizedBox(height: 16),
-                            
+
                             // Vehicle Make and Model
                             Row(
                               children: [
@@ -355,9 +427,9 @@ class _CargoFormPageState extends State<CargoFormPage> {
                                 ),
                               ],
                             ),
-                            
+
                             const SizedBox(height: 16),
-                            
+
                             CustomTextField(
                               hintText: 'Vehicle Year (e.g., 2019)',
                               prefixIcon: Icons.date_range_outlined,
@@ -368,7 +440,9 @@ class _CargoFormPageState extends State<CargoFormPage> {
                                   return 'Please enter vehicle year';
                                 }
                                 final year = int.tryParse(value);
-                                if (year == null || year < 1990 || year > DateTime.now().year + 1) {
+                                if (year == null ||
+                                    year < 1990 ||
+                                    year > DateTime.now().year + 1) {
                                   return 'Please enter a valid year';
                                 }
                                 return null;
@@ -377,9 +451,9 @@ class _CargoFormPageState extends State<CargoFormPage> {
                           ],
                         ),
                       ),
-                      
+
                       const SizedBox(height: 24),
-                      
+
                       // Capacity Information Section
                       Container(
                         padding: const EdgeInsets.all(24),
@@ -399,7 +473,6 @@ class _CargoFormPageState extends State<CargoFormPage> {
                               ),
                             ),
                             const SizedBox(height: 20),
-                            
                             CustomTextField(
                               hintText: 'Max Weight Capacity (kg) - e.g., 3000',
                               prefixIcon: Icons.fitness_center_outlined,
@@ -416,11 +489,10 @@ class _CargoFormPageState extends State<CargoFormPage> {
                                 return null;
                               },
                             ),
-                            
                             const SizedBox(height: 16),
-                            
                             CustomTextField(
-                              hintText: 'Max Dimensions (cm) - e.g., 500x200x250',
+                              hintText:
+                                  'Max Dimensions (cm) - e.g., 500x200x250',
                               prefixIcon: Icons.straighten_outlined,
                               controller: _maxDimensionsController,
                               validator: (value) {
@@ -433,9 +505,9 @@ class _CargoFormPageState extends State<CargoFormPage> {
                           ],
                         ),
                       ),
-                      
+
                       const SizedBox(height: 24),
-                      
+
                       // Service Information Section
                       Container(
                         padding: const EdgeInsets.all(24),
@@ -455,7 +527,7 @@ class _CargoFormPageState extends State<CargoFormPage> {
                               ),
                             ),
                             const SizedBox(height: 20),
-                            
+
                             CustomTextField(
                               hintText: 'Service Areas (e.g., Nationwide)',
                               prefixIcon: Icons.location_on_outlined,
@@ -467,9 +539,9 @@ class _CargoFormPageState extends State<CargoFormPage> {
                                 return null;
                               },
                             ),
-                            
+
                             const SizedBox(height: 16),
-                            
+
                             // Price Per Km and Minimum Charge
                             Row(
                               children: [
@@ -478,7 +550,9 @@ class _CargoFormPageState extends State<CargoFormPage> {
                                     hintText: 'Price/Km (TND) - e.g., 0.75',
                                     prefixIcon: Icons.attach_money_outlined,
                                     controller: _pricePerKmController,
-                                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                    keyboardType:
+                                        const TextInputType.numberWithOptions(
+                                            decimal: true),
                                     validator: (value) {
                                       if (value == null || value.isEmpty) {
                                         return 'Required';
@@ -515,9 +589,9 @@ class _CargoFormPageState extends State<CargoFormPage> {
                           ],
                         ),
                       ),
-                      
+
                       const SizedBox(height: 24),
-                      
+
                       // Service Description
                       Container(
                         height: 120,
@@ -534,7 +608,8 @@ class _CargoFormPageState extends State<CargoFormPage> {
                             fontWeight: FontWeight.w400,
                           ),
                           decoration: const InputDecoration(
-                            hintText: 'Service Description (e.g., "Specialized in temperature-sensitive cargo and heavy loads.")',
+                            hintText:
+                                'Service Description (e.g., "Specialized in temperature-sensitive cargo and heavy loads.")',
                             hintStyle: TextStyle(
                               color: AppColors.textLight,
                               fontSize: 16,
@@ -559,16 +634,16 @@ class _CargoFormPageState extends State<CargoFormPage> {
                           },
                         ),
                       ),
-                      
+
                       const SizedBox(height: 40),
-                      
+
                       // Submit button
                       CustomButton(
                         text: 'Register Cargo Service',
                         onPressed: _submitForm,
                         isLoading: _isLoading,
                       ),
-                      
+
                       const SizedBox(height: 40),
                     ],
                   ),

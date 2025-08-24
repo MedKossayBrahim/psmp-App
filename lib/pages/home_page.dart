@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:psmp_new/pages/covoiturage_page.dart';
+import 'package:psmp_new/pages/carpool_page.dart';
 import 'package:psmp_new/pages/login_page.dart';
-import 'package:psmp_new/pages/ride_page.dart';
+import 'package:psmp_new/pages/driver_page.dart';
 import 'package:psmp_new/pages/service_selection_page.dart';
-import 'package:psmp_new/pages/transporteur_page.dart';
+import 'package:psmp_new/pages/cargo_page.dart';
 import 'package:psmp_new/pages/carpool_driver_dashboard.dart';
 import '../models/sessionManager.dart';
 import '../models/user.dart';
@@ -128,6 +128,7 @@ class HomePage extends StatelessWidget {
     final User? user = SessionManager().getUser();
     final bool isUserRole = user?.role.toLowerCase() != 'user';
     print('Current user: ${user?.fullName}, Role: ${user?.role}');
+    print( "user : ${user?.toJson()}");
 
     return Scaffold(
       backgroundColor: AppColors.backgroundWhite,
@@ -326,7 +327,7 @@ class HomePage extends StatelessWidget {
                     ),
                   ),
                 ),
-              ] else if (!isUserRole) ...[
+              ] else if (user?.role.toLowerCase() == 'user') ...[
                 // Services title (only shown for non-user roles)
                 const Text(
                   'Choose your',
@@ -408,7 +409,7 @@ class HomePage extends StatelessWidget {
                                     context,
                                     MaterialPageRoute(
                                         builder: (context) =>
-                                            const TransporteurPage()),
+                                            const CargoPage()),
                                   );
                                 },
                                 imageAssetPath: 'assets/images/cargo.jpg',
